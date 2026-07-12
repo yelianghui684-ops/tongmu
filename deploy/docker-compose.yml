@@ -1,0 +1,46 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    environment:
+      TURN_HOST: ${TURN_HOST}
+      TURN_SECRET: ${TURN_SECRET}
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      DOMAIN: ${DOMAIN}
+
+  # TURN 中继兜底：P2P 打洞失败时视频分块经此转发（吃服务器带宽，仅兜底）
+  coturn:
+    image: coturn/coturn:4
+    restart: unless-stopped
+    network_mode: host
+    command: >-
+      --listening-port=3478
+      --fingerprint
+      --lt-cred-mech
+      --use-auth-secret
+      --static-auth-secret=${TURN_SECRET}
+      --realm=${TURN_HOST}
+      --min-port=49160
+      --max-port=49200
+      --no-cli
+      --no-tls
+      --no-dtls
+      --user-quota=12
+      --total-quota=1200
+
+volumes:
+  caddy-data:
+  caddy-config:

@@ -1,0 +1,5 @@
+# 自动 HTTPS（Let's Encrypt）；WebSocket 由 reverse_proxy 自动处理
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy app:3000
+}
