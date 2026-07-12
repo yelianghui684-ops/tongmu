@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { MemberInfo } from '@tongmu/shared';
+import VideoStage from '../components/VideoStage';
 import { useRoom } from '../useRoom';
 
 export default function Room() {
@@ -63,12 +64,7 @@ export default function Room() {
 
       <main className="room-main">
         <section className="stage">
-          <div className="stage-placeholder">
-            <p>🎬</p>
-            <p className="muted">
-              {room.isHost ? '下一步：选择要放映的本地视频（里程碑 2）' : '等待房主选片…'}
-            </p>
-          </div>
+          <VideoStage room={room} />
         </section>
 
         <aside className="sidebar">

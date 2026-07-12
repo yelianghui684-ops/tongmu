@@ -64,7 +64,10 @@ export interface MemberInfo {
 /** 房主权威播放状态，atServerTime 为服务器时钟（ms epoch） */
 export interface PlaybackState {
   position: number;
+  /** 播放器实际在播（缓冲握手时可能临时为 false） */
   isPlaying: boolean;
+  /** 房间意图：用户想要的播放/暂停状态，UI 按钮依据它渲染 */
+  intentPlaying: boolean;
   atServerTime: number;
 }
 
@@ -91,7 +94,7 @@ export type C2S =
   /** 任何成员发起播放操作；服务器转发给房主定夺 */
   | { t: 'playback_cmd'; action: PlaybackCmd }
   /** 仅房主：周期播放心跳（服务器盖时间戳后广播） */
-  | { t: 'playback_heartbeat'; position: number; isPlaying: boolean }
+  | { t: 'playback_heartbeat'; position: number; isPlaying: boolean; intentPlaying: boolean }
   /** 缓冲状态上报（用于全体等待握手） */
   | { t: 'buffering'; isBuffering: boolean }
   /** WebRTC 信令转发（SDP/ICE） */

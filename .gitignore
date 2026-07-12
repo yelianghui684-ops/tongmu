@@ -5,3 +5,4 @@ dist/
 e2e/test-results/
 e2e/playwright-report/
 .env
+client/public/test-video.webm

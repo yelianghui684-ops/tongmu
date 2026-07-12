@@ -125,7 +125,12 @@ export class RoomManager {
           room,
           {
             t: 'playback',
-            state: { position: msg.position, isPlaying: msg.isPlaying, atServerTime: this.now() },
+            state: {
+              position: msg.position,
+              isPlaying: msg.isPlaying,
+              intentPlaying: msg.intentPlaying,
+              atServerTime: this.now(),
+            },
           },
           member.id,
         );
