@@ -1,5 +1,23 @@
 # 部署指南
 
+## 免费方案：Oracle Always Free + DuckDNS（¥0/月）
+
+1. **注册** [oracle.com/cloud/free](https://www.oracle.com/cloud/free/)：需邮箱、手机、信用卡（仅验证不扣费）。**home region 注册后不可改**，推荐 Seoul / Tokyo / Singapore。
+2. **建实例**：Compute → Create Instance → 镜像选 Ubuntu 24.04，shape 选 `VM.Standard.E2.1.Micro`（AMD 1C1G，Always Free 容量最充足），粘贴你的 SSH 公钥，记下公网 IP。
+3. **安全组**：实例的 VCN → Security List → Ingress Rules，放行 80/TCP、443/TCP、3478/TCP、3478/UDP、49160-49200/UDP（source 均为 0.0.0.0/0）。
+4. **免费域名**：[duckdns.org](https://www.duckdns.org) 登录 → 建子域名 → IP 填实例公网 IP。
+5. **部署**：
+   ```bash
+   ssh ubuntu@<公网IP>
+   curl -fsSL https://raw.githubusercontent.com/<你的用户名>/tongmu/main/deploy/vps-bootstrap.sh | bash
+   # 重新登录一次让 docker 组生效，然后：
+   git clone https://github.com/<你的用户名>/tongmu.git && cd tongmu/deploy
+   cp .env.example .env && nano .env   # DOMAIN/TURN_HOST=xxx.duckdns.org，TURN_SECRET=openssl rand -hex 32
+   docker compose up -d --build
+   ```
+
+> ⚠️ Oracle 的 Ubuntu 镜像自带 iptables 规则（只开 22），**云控制台安全组和机器本机防火墙要同时放行**——`vps-bootstrap.sh` 已处理本机部分。1GB 内存构建镜像需要 swap，脚本也已处理。
+
 ## 前提
 
 1. **一台 VPS**：1C1G 即可（信令流量极小；TURN 兜底中继才吃带宽）。国内用户建议选香港/新加坡节点，免备案且延迟可接受。
