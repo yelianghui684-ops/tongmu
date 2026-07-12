@@ -1,0 +1,375 @@
+/* 同幕 · 深色影院风 */
+:root {
+  --bg: #0d0e12;
+  --bg-raised: #16181f;
+  --bg-panel: #1c1f28;
+  --border: #2a2e3a;
+  --text: #e8e6e1;
+  --text-dim: #8b8f9a;
+  --accent: #e6a23c;
+  --accent-dim: #b57f2a;
+  --ok: #67c23a;
+  --warn: #e6a23c;
+  --danger: #f56c6c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  font-size: 15px;
+}
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+button:hover {
+  border-color: var(--accent-dim);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a1508;
+  font-weight: 600;
+}
+
+button.primary:hover:not(:disabled) {
+  background: #f0b155;
+}
+
+button.ghost {
+  background: transparent;
+}
+
+input {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  outline: none;
+  width: 100%;
+}
+
+input:focus {
+  border-color: var(--accent-dim);
+}
+
+.muted {
+  color: var(--text-dim);
+}
+
+.error {
+  color: var(--danger);
+  margin: 10px 0 0;
+  font-size: 14px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* ---------- 首页 ---------- */
+
+.home {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.home-card {
+  width: 380px;
+  max-width: 100%;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 36px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+}
+
+.logo {
+  font-size: 42px;
+  margin: 0;
+  letter-spacing: 8px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.logo.small {
+  font-size: 18px;
+  letter-spacing: 3px;
+}
+
+.tagline {
+  color: var(--text-dim);
+  margin: 0 0 10px;
+  line-height: 1.6;
+}
+
+.field {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.divider {
+  color: var(--text-dim);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.join-row {
+  display: flex;
+  gap: 8px;
+}
+
+.join-row input {
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+/* ---------- 房间 ---------- */
+
+.room {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.room-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 18px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+}
+
+.room-code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  letter-spacing: 3px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 10px;
+  color: var(--accent);
+}
+
+.badge {
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1px 9px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.badge.ok {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.badge.warn {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.room-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  position: relative;
+  min-width: 0;
+}
+
+.stage-placeholder {
+  text-align: center;
+  font-size: 15px;
+}
+
+.stage-placeholder p:first-child {
+  font-size: 56px;
+  margin: 0 0 10px;
+}
+
+.sidebar {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  background: var(--bg-raised);
+  min-height: 0;
+}
+
+.panel {
+  padding: 14px 16px;
+}
+
+.panel h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.members {
+  border-bottom: 1px solid var(--border);
+}
+
+.members ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.members li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.members li.offline .name {
+  color: var(--text-dim);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot[data-state='on'] {
+  background: var(--ok);
+}
+
+.dot[data-state='off'] {
+  background: var(--text-dim);
+}
+
+.members .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chat-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 4px;
+}
+
+.chat-msg {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 100%;
+}
+
+.chat-msg.mine {
+  align-items: flex-end;
+}
+
+.chat-from {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+
+.chat-text {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 10px;
+  word-break: break-word;
+}
+
+.chat-msg.mine .chat-text {
+  background: #3a2f1a;
+  border-color: var(--accent-dim);
+}
+
+.chat-input {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+@media (max-width: 720px) {
+  .room-main {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    max-height: 45%;
+  }
+}
