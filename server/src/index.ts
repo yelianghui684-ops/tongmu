@@ -6,6 +6,7 @@ import fastifyStatic from '@fastify/static';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { parseC2S, type S2C } from '@tongmu/shared';
 import { RoomManager, type Conn, type Session } from './rooms.js';
+import { buildIceConfig } from './turn.js';
 
 const PORT = Number(process.env.PORT ?? 3000);
 const HOST = process.env.HOST ?? '0.0.0.0';
@@ -16,6 +17,8 @@ const clientDist = path.resolve(__dirname, '../../client/dist');
 const app = Fastify({ logger: { level: process.env.LOG_LEVEL ?? 'info' } });
 
 app.get('/healthz', async () => ({ ok: true }));
+
+app.get('/api/ice', async () => buildIceConfig(process.env));
 
 if (existsSync(clientDist)) {
   await app.register(fastifyStatic, { root: clientDist });

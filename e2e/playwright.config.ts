@@ -7,8 +7,12 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:5173',
     launchOptions: {
-      // 同步断言需要程序化 play() 不被自动播放策略拦截
-      args: ['--autoplay-policy=no-user-gesture-required'],
+      args: [
+        // 同步断言需要程序化 play() 不被自动播放策略拦截
+        '--autoplay-policy=no-user-gesture-required',
+        // headless 无 mDNS 解析，需要真实 host candidate 才能建立回环 P2P
+        '--disable-features=WebRtcHideLocalIpsWithMdns',
+      ],
     },
   },
   webServer: [

@@ -349,6 +349,33 @@ input:focus {
   color: var(--text-dim);
 }
 
+.pick-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.transfer-progress {
+  width: min(420px, 80vw);
+}
+
+.progress-track {
+  height: 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 12px 0 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+
 .sidebar {
   width: 300px;
   display: flex;

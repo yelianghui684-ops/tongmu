@@ -41,7 +41,8 @@ export function usePlaybackSync(
   videoRef: RefObject<HTMLVideoElement | null>,
   active: boolean,
 ): PlaybackSync {
-  const { isHost, selfId } = room;
+  // 只取稳定标识作依赖；整个 room 对象每次渲染都是新引用，会导致引擎反复重建
+  const { isHost, selfId, onMessage } = room;
   const [needGesture, setNeedGesture] = useState(false);
   const [someoneBuffering, setSomeoneBuffering] = useState(false);
   const [drift, setDrift] = useState<number | null>(null);
@@ -132,7 +133,7 @@ export function usePlaybackSync(
     reconcileRef.current = reconcile;
 
     // ---- 服务器消息 ----
-    const offMsg = room.onMessage((msg) => {
+    const offMsg = onMessage((msg) => {
       switch (msg.t) {
         case 'pong':
           samplesRef.current = pushSample(
@@ -207,10 +208,9 @@ export function usePlaybackSync(
       video.removeEventListener('canplay', onReadyToPlay);
       reconcileRef.current = () => {};
       bufferingRef.current = new Set();
-      wantPlayingRef.current = false;
-      latestRef.current = null;
+      // 不重置 wantPlayingRef/latestRef：意图与权威状态要跨 effect 重建存活
     };
-  }, [active, isHost, selfId, room, videoRef, serverNow, tryPlay]);
+  }, [active, isHost, selfId, onMessage, videoRef, serverNow, tryPlay]);
 
   const command = useCallback(
     (action: PlaybackCmd) => {

@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import type { FileFingerprint } from '@tongmu/shared';
 import { computeFingerprint, formatSize, sameFingerprint } from '../file/fingerprint';
 import { usePlaybackSync } from '../sync/usePlaybackSync';
+import { opfsSupported } from '../transfer/opfs';
+import { ReceiveSession } from '../transfer/receiver';
+import type { SignalPayload } from '../transfer/rtc';
+import { SenderHub } from '../transfer/sender';
 import type { RoomChannel } from '../useRoom';
 import { wsClient } from '../ws';
 
@@ -11,13 +15,85 @@ interface LoadedFile {
   url: string;
 }
 
+type TransferState =
+  | { status: 'idle' }
+  | { status: 'transferring'; received: number; total: number }
+  | { status: 'error'; message: string };
+
 /** 放映舞台：选片/校验/播放器 + 同步引擎 */
 export default function VideoStage({ room }: { room: RoomChannel }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [loaded, setLoaded] = useState<LoadedFile | null>(null);
   const [pickError, setPickError] = useState('');
   const [hashing, setHashing] = useState(false);
+  const [transfer, setTransfer] = useState<TransferState>({ status: 'idle' });
+  const receiveRef = useRef<ReceiveSession | null>(null);
   const sync = usePlaybackSync(room, videoRef, loaded !== null);
+
+  // 注意：依赖必须用稳定标识（isHost/onMessage），不能用整个 room 对象——
+  // useRoom 每次渲染返回新对象，会让传输枢纽被反复销毁重建，掐断 P2P 连接
+  const { isHost, onMessage } = room;
+
+  // 房主：文件就绪后挂起发送枢纽，应答观众的 P2P 请求
+  useEffect(() => {
+    if (!isHost || !loaded) return;
+    const hub = new SenderHub(loaded.file, loaded.fingerprint);
+    const off = onMessage((msg) => {
+      if (msg.t === 'signal') {
+        hub.handleSignal(msg.from, msg.data as SignalPayload).catch((err: unknown) => {
+          console.debug('[transfer:send] handleSignal failed:', err);
+        });
+      }
+    });
+    return () => {
+      off();
+      hub.close();
+    };
+  }, [isHost, loaded, onMessage]);
+
+  // 观众：把房主的信令喂给接收会话
+  useEffect(() => {
+    if (isHost) return;
+    const off = onMessage((msg) => {
+      if (msg.t === 'signal') receiveRef.current?.handleSignal(msg.data as SignalPayload);
+    });
+    return off;
+  }, [isHost, onMessage]);
+
+  useEffect(() => {
+    return () => receiveRef.current?.cancel();
+  }, []);
+
+  function startTransfer() {
+    const fp = room.fileFingerprint;
+    if (!fp) return;
+    receiveRef.current?.cancel();
+    setTransfer({ status: 'transferring', received: 0, total: fp.size });
+    setPickError('');
+    let lastReport = 0;
+    const session = new ReceiveSession(room.hostId, fp, {
+      onProgress: (received, total) => {
+        setTransfer({ status: 'transferring', received, total });
+        const nowTs = Date.now();
+        if (nowTs - lastReport > 500) {
+          lastReport = nowTs;
+          wsClient.send({ t: 'file_state', state: 'transferring', progress: received / total });
+        }
+      },
+      onDone: (file) => {
+        receiveRef.current = null;
+        setTransfer({ status: 'idle' });
+        setLoaded({ file, fingerprint: fp, url: URL.createObjectURL(file) });
+        wsClient.send({ t: 'file_state', state: 'ready' });
+      },
+      onError: (message) => {
+        setTransfer({ status: 'error', message });
+        wsClient.send({ t: 'file_state', state: 'none' });
+      },
+    });
+    receiveRef.current = session;
+    void session.start();
+  }
 
   // 房主换片 / 取消选片时，观众的旧文件作废
   useEffect(() => {
@@ -77,14 +153,32 @@ export default function VideoStage({ room }: { room: RoomChannel }) {
             <p className="muted hint">支持浏览器可播的格式，推荐 MP4 (H.264/AAC)</p>
           </>
         ) : room.fileFingerprint ? (
-          <>
-            <p>
-              房主已选片：<strong>{room.fileFingerprint.name}</strong>
-              <span className="muted">（{formatSize(room.fileFingerprint.size)}）</span>
-            </p>
-            <FilePicker label="我有这个文件，选择它" onPick={pickFile} />
-            <p className="muted hint">没有这个文件？P2P 直传功能即将上线（里程碑 3）</p>
-          </>
+          transfer.status === 'transferring' ? (
+            <TransferProgress received={transfer.received} total={transfer.total} />
+          ) : (
+            <>
+              <p>
+                房主已选片：<strong>{room.fileFingerprint.name}</strong>
+                <span className="muted">（{formatSize(room.fileFingerprint.size)}）</span>
+              </p>
+              <div className="pick-actions">
+                <FilePicker label="我有这个文件，选择它" onPick={pickFile} />
+                {opfsSupported() && (
+                  <button className="primary" onClick={startTransfer}>
+                    没有文件，让房主传给我
+                  </button>
+                )}
+              </div>
+              {transfer.status === 'error' && (
+                <p className="error">
+                  {transfer.message}{' '}
+                  <button className="ghost" onClick={startTransfer}>
+                    重试
+                  </button>
+                </p>
+              )}
+            </>
+          )
         ) : (
           <p className="muted">等待房主选片…</p>
         )}
@@ -104,6 +198,22 @@ export default function VideoStage({ room }: { room: RoomChannel }) {
       {sync.someoneBuffering && <div className="buffer-note">有成员缓冲中，全场等待…</div>}
       <ControlBar videoRef={videoRef} sync={sync} isHost={room.isHost} fileName={loaded.file.name} />
       {pickError && <p className="error">{pickError}</p>}
+    </div>
+  );
+}
+
+function TransferProgress({ received, total }: { received: number; total: number }) {
+  const pct = total > 0 ? (received / total) * 100 : 0;
+  return (
+    <div className="transfer-progress">
+      <p>正在从房主处接收文件…</p>
+      <div className="progress-track">
+        <div className="progress-fill" style={{ width: `${pct}%` }} />
+      </div>
+      <p className="muted">
+        {formatSize(received)} / {formatSize(total)}（{pct.toFixed(1)}%）
+      </p>
+      <p className="muted hint">文件点对点直传，不经过服务器；刷新页面后可断点续传</p>
     </div>
   );
 }
