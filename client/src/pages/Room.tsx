@@ -139,6 +139,13 @@ function CopyLinkButton() {
   );
 }
 
+/** 头像底色：按成员 id 从暗色板取，稳定且低饱和（见 DESIGN.md Components） */
+function avatarHue(id: string): number {
+  let sum = 0;
+  for (const ch of id) sum = (sum + ch.charCodeAt(0)) % 6;
+  return sum;
+}
+
 function MemberList({ members, selfId }: { members: MemberInfo[]; selfId: string }) {
   return (
     <div className="panel members">
@@ -146,7 +153,9 @@ function MemberList({ members, selfId }: { members: MemberInfo[]; selfId: string
       <ul>
         {members.map((m) => (
           <li key={m.id} className={m.connected ? '' : 'offline'}>
-            <span className="dot" data-state={m.connected ? 'on' : 'off'} />
+            <span className="avatar" data-hue={avatarHue(m.id)}>
+              {(m.nickname[0] ?? '?').toUpperCase()}
+            </span>
             <span className="name">
               {m.nickname}
               {m.id === selfId && '（我）'}
