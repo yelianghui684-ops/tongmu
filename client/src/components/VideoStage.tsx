@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FileFingerprint } from '@tongmu/shared';
 import { computeFingerprint, formatSize, sameFingerprint } from '../file/fingerprint';
+import { subtitleFileToVttUrl } from '../file/subtitles';
 import { usePlaybackSync } from '../sync/usePlaybackSync';
 import { opfsSupported } from '../transfer/opfs';
 import { ReceiveSession } from '../transfer/receiver';
@@ -27,6 +28,7 @@ export default function VideoStage({ room }: { room: RoomChannel }) {
   const [pickError, setPickError] = useState('');
   const [hashing, setHashing] = useState(false);
   const [transfer, setTransfer] = useState<TransferState>({ status: 'idle' });
+  const [subtitleUrl, setSubtitleUrl] = useState<string | null>(null);
   const receiveRef = useRef<ReceiveSession | null>(null);
   const sync = usePlaybackSync(room, videoRef, loaded !== null);
 
@@ -141,6 +143,19 @@ export default function VideoStage({ room }: { room: RoomChannel }) {
     }
   }
 
+  async function pickSubtitle(file: File) {
+    const url = await subtitleFileToVttUrl(file);
+    setSubtitleUrl((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return url;
+    });
+    // 新 track 挂载后确保显示
+    requestAnimationFrame(() => {
+      const track = videoRef.current?.textTracks[0];
+      if (track) track.mode = 'showing';
+    });
+  }
+
   if (!loaded) {
     return (
       <div className="stage-placeholder">
@@ -189,14 +204,23 @@ export default function VideoStage({ room }: { room: RoomChannel }) {
 
   return (
     <div className="player">
-      <video ref={videoRef} src={loaded.url} playsInline />
+      <video ref={videoRef} src={loaded.url} playsInline>
+        {subtitleUrl && <track default kind="subtitles" label="字幕" src={subtitleUrl} />}
+      </video>
       {sync.needGesture && (
         <button className="gesture-overlay" onClick={sync.confirmGesture}>
           ▶ 点击继续同步播放
         </button>
       )}
       {sync.someoneBuffering && <div className="buffer-note">有成员缓冲中，全场等待…</div>}
-      <ControlBar videoRef={videoRef} sync={sync} isHost={room.isHost} fileName={loaded.file.name} />
+      <ControlBar
+        videoRef={videoRef}
+        sync={sync}
+        isHost={room.isHost}
+        fileName={loaded.file.name}
+        onPickSubtitle={pickSubtitle}
+        hasSubtitle={subtitleUrl !== null}
+      />
       {pickError && <p className="error">{pickError}</p>}
     </div>
   );
@@ -245,12 +269,17 @@ function ControlBar({
   sync,
   isHost,
   fileName,
+  onPickSubtitle,
+  hasSubtitle,
 }: {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   sync: ReturnType<typeof usePlaybackSync>;
   isHost: boolean;
   fileName: string;
+  onPickSubtitle: (f: File) => void;
+  hasSubtitle: boolean;
 }) {
+  const subInputRef = useRef<HTMLInputElement>(null);
   const [, forceTick] = useState(0);
 
   // 播放器状态没有 React 化，用轻量 tick 驱动时间条刷新
@@ -294,6 +323,24 @@ function ControlBar({
       />
       <span className="time">{fmtTime(duration)}</span>
       <VolumeControl videoRef={videoRef} />
+      <button
+        className="ghost"
+        title="加载外挂字幕（.srt/.vtt，各自加载各自的）"
+        onClick={() => subInputRef.current?.click()}
+      >
+        {hasSubtitle ? '字幕 ✓' : '字幕'}
+      </button>
+      <input
+        ref={subInputRef}
+        type="file"
+        accept=".srt,.vtt"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onPickSubtitle(f);
+          e.target.value = '';
+        }}
+      />
       <span className="file-name" title={fileName}>
         {fileName}
       </span>
