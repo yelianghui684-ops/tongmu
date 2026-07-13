@@ -6,6 +6,7 @@ COPY client/package.json client/
 COPY server/package.json server/
 COPY shared/package.json shared/
 RUN npm ci --workspace=client --workspace=server --workspace=shared --include-workspace-root
+COPY tsconfig.base.json ./
 COPY shared/ shared/
 COPY client/ client/
 COPY server/ server/
