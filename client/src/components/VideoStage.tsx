@@ -29,6 +29,7 @@ export default function VideoStage({ room }: { room: RoomChannel }) {
   const [hashing, setHashing] = useState(false);
   const [transfer, setTransfer] = useState<TransferState>({ status: 'idle' });
   const [subtitleUrl, setSubtitleUrl] = useState<string | null>(null);
+  const [decodeError, setDecodeError] = useState(false);
   const receiveRef = useRef<ReceiveSession | null>(null);
   const sync = usePlaybackSync(room, videoRef, loaded !== null);
 
@@ -204,9 +205,37 @@ export default function VideoStage({ room }: { room: RoomChannel }) {
 
   return (
     <div className="player">
-      <video ref={videoRef} src={loaded.url} playsInline>
+      <video
+        ref={videoRef}
+        src={loaded.url}
+        playsInline
+        onError={() => {
+          if (!videoRef.current?.error) return;
+          setDecodeError(true);
+          // 播不了就不算就绪，避免其他成员看到假的"已就绪"
+          wsClient.send({ t: 'file_state', state: 'none' });
+        }}
+      >
         {subtitleUrl && <track default kind="subtitles" label="字幕" src={subtitleUrl} />}
       </video>
+      {decodeError && (
+        <div className="decode-error">
+          <p>😵 浏览器无法解码这个文件</p>
+          <p className="muted">
+            常见于 MKV 封装或 HEVC/H.265 编码。请用其他工具转成 MP4 (H.264/AAC) 后重新选择。
+          </p>
+          <button
+            className="primary"
+            onClick={() => {
+              setDecodeError(false);
+              URL.revokeObjectURL(loaded.url);
+              setLoaded(null);
+            }}
+          >
+            重新选片
+          </button>
+        </div>
+      )}
       {sync.needGesture && (
         <button className="gesture-overlay" onClick={sync.confirmGesture}>
           ▶ 点击继续同步播放

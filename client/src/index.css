@@ -404,6 +404,30 @@ input[type='range']::-moz-range-thumb {
   object-fit: contain;
 }
 
+.decode-error {
+  position: absolute;
+  inset: 0;
+  background: #000000d0;
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-sm);
+  text-align: center;
+  padding: var(--sp-xl);
+  z-index: 6;
+}
+
+.decode-error p {
+  margin: 0;
+  max-width: 420px;
+}
+
+.decode-error p:first-child {
+  font-size: 18px;
+}
+
 .gesture-overlay {
   position: absolute;
   inset: 0;

@@ -14,6 +14,8 @@ class WsClient {
   private retry = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private wanted = false;
+  /** 断线期间的待发消息，重连后按序补发（防止用户操作静默丢失） */
+  private sendQueue: C2S[] = [];
 
   get isOpen(): boolean {
     return this.ws?.readyState === WebSocket.OPEN;
@@ -31,7 +33,11 @@ class WsClient {
     this.ws = ws;
     ws.onopen = () => {
       this.retry = 0;
+      // 先 emit ws_open（业务层借此发 resume 恢复会话），再补发排队消息，保证顺序正确
       this.emit({ t: 'ws_open' });
+      const queued = this.sendQueue;
+      this.sendQueue = [];
+      for (const msg of queued) this.send(msg);
     };
     ws.onmessage = (ev) => {
       try {
@@ -50,13 +56,20 @@ class WsClient {
 
   disconnect(): void {
     this.wanted = false;
+    this.sendQueue = [];
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.ws?.close();
     this.ws = null;
   }
 
   send(msg: C2S): void {
-    if (this.isOpen) this.ws!.send(JSON.stringify(msg));
+    if (this.isOpen) {
+      this.ws!.send(JSON.stringify(msg));
+      return;
+    }
+    // ping/心跳是周期消息，过期无意义，不入队；其余排队等重连补发
+    if (msg.t === 'ping' || msg.t === 'playback_heartbeat') return;
+    if (this.wanted && this.sendQueue.length < 50) this.sendQueue.push(msg);
   }
 
   on(fn: Handler): () => void {

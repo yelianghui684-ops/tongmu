@@ -36,7 +36,7 @@ export default function Room() {
   if (room.status === 'connecting' && !room.selfId) {
     return (
       <Centered>
-        <p className="muted">正在连接…</p>
+        <ConnectingHint />
       </Centered>
     );
   }
@@ -73,6 +73,25 @@ export default function Room() {
         </aside>
       </main>
     </div>
+  );
+}
+
+/** 连接超过 4 秒 → 大概率是免费托管冷启动，给用户预期 */
+function ConnectingHint() {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setSlow(true), 4000);
+    return () => clearTimeout(timer);
+  }, []);
+  return (
+    <>
+      <p className="muted">正在连接…</p>
+      {slow && (
+        <p className="muted hint">
+          服务器可能正在从休眠中唤醒（免费托管冷启动约需 30-60 秒），请稍候，无需刷新。
+        </p>
+      )}
+    </>
   );
 }
 
