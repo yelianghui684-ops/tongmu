@@ -1,6 +1,15 @@
 # 部署指南
 
-## 免费方案：Oracle Always Free + DuckDNS（¥0/月）
+## 免费方案 A：Render 托管（¥0/月，最省事）
+
+不用买服务器和域名，送 `*.onrender.com` 域名和 HTTPS。代价：闲置 15 分钟后休眠（下次打开等 30-60 秒冷启动）；平台无 UDP，TURN 用第三方免费额度。
+
+1. 代码推到 GitHub（仓库根已含 `render.yaml` 蓝图）。
+2. [render.com](https://render.com) 用 GitHub 账号登录 → **New → Blueprint** → 选择本仓库 → Apply。等待构建完成即得 `https://tongmu.onrender.com`。
+3. **（可选）配 TURN 提高传片成功率**：[metered.ca](https://www.metered.ca/tools/openrelay/) 注册 Open Relay（免费 20GB/月）拿到凭据，在 Render 服务的 Environment 里把 `ICE_SERVERS_JSON` 设为其提供的 iceServers 数组 JSON，保存后自动重新部署。
+4. 验证：`https://<你的域名>/healthz` 返回 `{"ok":true}`；两台不同网络设备走完整流程。
+
+## 免费方案 B：Oracle Always Free + DuckDNS（¥0/月）
 
 1. **注册** [oracle.com/cloud/free](https://www.oracle.com/cloud/free/)：需邮箱、手机、信用卡（仅验证不扣费）。**home region 注册后不可改**，推荐 Seoul / Tokyo / Singapore。
 2. **建实例**：Compute → Create Instance → 镜像选 Ubuntu 24.04，shape 选 `VM.Standard.E2.1.Micro`（AMD 1C1G，Always Free 容量最充足），粘贴你的 SSH 公钥，记下公网 IP。

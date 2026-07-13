@@ -1,0 +1,16 @@
+# Render Blueprint —— 在 Render 控制台 New → Blueprint 选中本仓库即可一键部署
+# 免费方案说明：闲置 15 分钟后休眠，下次访问冷启动约 30-60 秒；WebSocket 正常支持。
+services:
+  - type: web
+    name: tongmu
+    runtime: docker
+    dockerfilePath: ./deploy/Dockerfile
+    dockerContext: .
+    plan: free
+    region: singapore
+    healthCheckPath: /healthz
+    envVars:
+      # 可选：第三方 TURN 静态凭据（metered.ca Open Relay 等），RTCIceServer[] JSON。
+      # 留空则不配 TURN——大多数网络下 WebRTC 直连也能成功，传片失败率会略高。
+      - key: ICE_SERVERS_JSON
+        value: ''
